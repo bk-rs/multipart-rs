@@ -1,0 +1,7 @@
+[package]
+name = "multipart-form-data"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+multipart-boundary = { version = "0.1", default-features = false, path = "../multipart-boundary" }

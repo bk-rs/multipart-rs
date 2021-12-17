@@ -1,0 +1,8 @@
+--------------------------8cde15cb2484c740
+Content-Disposition: form-data; name="foo"; filename="foo.txt"
+Content-Type: text/plain
+X-A: 1
+X-B: 2
+
+bar
+--------------------------8cde15cb2484c740--
