@@ -8,7 +8,7 @@ where
     W: Write,
 {
     buf_writer: BufWriter<W>,
-    boundary: String,
+    pub boundary: String,
 }
 
 impl<W> MultipartFormDataWriter<W>
@@ -27,6 +27,14 @@ where
             buf_writer: BufWriter::new(writer),
             boundary: boundary.as_ref().to_owned(),
         }
+    }
+
+    pub fn write_text_field(
+        &mut self,
+        name: impl AsRef<str>,
+        value: impl AsRef<str>,
+    ) -> Result<(), IoError> {
+        self.write_field(name, value.as_ref(), None, None, None)
     }
 
     pub fn write_field<'a>(
@@ -96,7 +104,7 @@ mod tests {
             vec![],
             "------------------------afb08437765cfecd",
         );
-        writer.write_field("foo", "bar", None, None, None).unwrap();
+        writer.write_text_field("foo", "bar").unwrap();
         let buf = writer.finish().unwrap();
         println!("{}", String::from_utf8(buf.clone()).unwrap());
         assert_eq!(buf, include_bytes!("../tests/curl_F_body_files/case1.txt"));
@@ -118,5 +126,67 @@ mod tests {
         let buf = writer.finish().unwrap();
         println!("{}", String::from_utf8(buf.clone()).unwrap());
         assert_eq!(buf, include_bytes!("../tests/curl_F_body_files/case2.txt"));
+    }
+
+    #[test]
+    fn test_httpbin() {
+        use std::{collections::HashMap, time::Duration};
+
+        use isahc::{
+            config::Configurable as _,
+            http::{header::CONTENT_TYPE, Method},
+            HttpClient, ReadResponseExt as _, Request,
+        };
+        use serde::Deserialize;
+
+        #[derive(Deserialize)]
+        struct Body {
+            form: HashMap<String, String>,
+            headers: HashMap<String, String>,
+        }
+
+        //
+        let mut writer = MultipartFormDataWriter::new(vec![]);
+        let boundary = writer.boundary.to_owned();
+        writer.write_text_field("foo", "bar").unwrap();
+        let buf = writer.finish().unwrap();
+
+        //
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri("http://httpbin.org/post")
+            .header(
+                CONTENT_TYPE,
+                format!("multipart/form-data; boundary={}", boundary),
+            )
+            .body(buf)
+            .unwrap();
+
+        let client = HttpClient::builder()
+            .timeout(Duration::from_secs(5))
+            .build()
+            .unwrap();
+
+        let mut response = match client.send(request) {
+            Ok(x) => x,
+            Err(err) => {
+                eprintln!("client.send failed, err: {}", err);
+                return;
+            }
+        };
+
+        let body = response.bytes().unwrap();
+        let body: Body = serde_json::from_slice(&body).unwrap();
+
+        assert_eq!(
+            body.form,
+            vec![("foo".to_owned(), "bar".to_owned())]
+                .into_iter()
+                .collect(),
+        );
+        assert_eq!(
+            body.headers.get("Content-Type").cloned().unwrap(),
+            format!("multipart/form-data; boundary={}", boundary)
+        )
     }
 }
