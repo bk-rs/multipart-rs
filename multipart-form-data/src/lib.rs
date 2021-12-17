@@ -89,6 +89,8 @@ where
         self.buf_writer.write_all(self.boundary.as_bytes())?;
         self.buf_writer.write_all(b"--")?;
 
+        self.buf_writer.write_all(b"\r\n")?;
+
         Ok(self.buf_writer.into_inner()?)
     }
 }
@@ -187,6 +189,7 @@ mod tests {
         assert_eq!(
             body.headers.get("Content-Type").cloned().unwrap(),
             format!("multipart/form-data; boundary={}", boundary)
-        )
+        );
+        assert_eq!(body.headers.get("Content-Length").cloned().unwrap(), "141");
     }
 }
