@@ -1,7 +1,16 @@
 [package]
 name = "multipart-boundary"
 version = "0.1.0"
+authors = ["vkill <vkill.net@gmail.com>"]
 edition = "2021"
+description = "Multipart boundary"
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/bk-rs/multipart-rs"
+homepage = "https://github.com/bk-rs/multipart-rs"
+documentation = "https://docs.rs/multipart-boundary"
+keywords = []
+categories = []
+readme = "README.md"
 
 [dependencies]
 rand = { version = "0.8", default-features = false, features = ["std", "std_rng"] }
